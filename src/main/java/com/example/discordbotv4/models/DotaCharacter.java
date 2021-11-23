@@ -26,9 +26,9 @@ public class DotaCharacter implements Serializable {
     Float base_mr;
     Float base_attack_min;
     Float base_attack_max;
-    Float base_str;
-    Float base_agi;
-    Float base_int;
+    Long base_str;
+    Long base_agi;
+    Long base_int;
     Float str_gain;
     Float agi_gain;
     Float int_gain;
