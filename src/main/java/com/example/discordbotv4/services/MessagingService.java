@@ -1,5 +1,6 @@
 package com.example.discordbotv4.services;
 
+import lombok.Builder;
 import org.javacord.api.entity.channel.TextChannel;
 import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.MessageAuthor;
@@ -15,7 +16,17 @@ import java.util.concurrent.CompletableFuture;
 public class MessagingService {
 
 
-    public CompletableFuture<Message> sendMessage(MessageAuthor author, String title, String description, String footer, String thumbnail, TextChannel channel, Map<String, String> fields) {
+
+
+    public CompletableFuture<Message> sendMessage(
+            MessageAuthor author,
+            String title,
+            String description,
+            String footer,
+            String thumbnail,
+            TextChannel channel,
+            Map<String, String> fields
+    ) {
 
         int red = (int) Math.floor(Math.random() * 255);
         int green = (int) Math.floor(Math.random() * 255);
@@ -29,11 +40,16 @@ public class MessagingService {
                 .setThumbnail(thumbnail)
                 .setColor(new Color(red, green, blue));
 
-        if(fields != null) {
+        if (fields != null) {
             fields.forEach(embedBuilder::addInlineField);
         }
 
         return new MessageBuilder().setEmbed(embedBuilder).send(channel);
     }
+
+    public CompletableFuture<Message> sendErrorMessage(MessageAuthor author, TextChannel channel) {
+        return sendMessage(author, "Произошла ошибка :(", null, null, null, channel, null);
+    }
+
 
 }

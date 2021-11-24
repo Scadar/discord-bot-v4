@@ -1,0 +1,1 @@
+web: java $JAVA_OPTS -Dserver.port=$PORT -jar target/discord-bot-v4-0.0.1-SNAPSHOT.jar $JAR_OPTS
