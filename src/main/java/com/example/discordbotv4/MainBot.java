@@ -1,43 +1,39 @@
 package com.example.discordbotv4;
 
-import com.example.discordbotv4.listeners.ChangeIdListener;
-import com.example.discordbotv4.listeners.DotaTest;
-import com.example.discordbotv4.listeners.VoiceConnect;
-import com.example.discordbotv4.listeners.main.MainController;
-import com.example.discordbotv4.listeners.main.MainControllerListener;
+import com.example.discordbotv4.listeners.ChangeSteamId;
+import com.example.discordbotv4.listeners.CheckSteamId;
+import com.example.discordbotv4.listeners.Help;
+import com.example.discordbotv4.listeners.RandomCharacter;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.Environment;
 
 @Configuration
 public class MainBot {
 
-    private final Environment env;
-    private final VoiceConnect voiceConnect;
-    private final DotaTest dotaTest;
-    private final MainController mainController;
-    private final MainControllerListener mainControllerListener;
-    private final ChangeIdListener changeIdListener;
+    private final ChangeSteamId changeIdListener;
+    private final CheckSteamId checkSteamId;
+    private final RandomCharacter randomCharacter;
+    private final Help help;
+
+    @Value("${discord.token}")
+    private String token;
 
     @Autowired
-    public MainBot(Environment env, VoiceConnect voiceConnect, DotaTest dotaTest, MainController mainController, MainControllerListener mainControllerListener, ChangeIdListener changeIdListener) {
-        this.env = env;
-        this.voiceConnect = voiceConnect;
-        this.dotaTest = dotaTest;
-        this.mainController = mainController;
-        this.mainControllerListener = mainControllerListener;
+    public MainBot(ChangeSteamId changeIdListener, CheckSteamId checkSteamId, RandomCharacter randomCharacter, Help help) {
+        this.randomCharacter = randomCharacter;
         this.changeIdListener = changeIdListener;
+        this.checkSteamId = checkSteamId;
+        this.help = help;
     }
 
     @Bean
     @ConfigurationProperties(value = "discord-api")
     public DiscordApi discordApi() {
-
-        String token = env.getProperty("TOKEN");
 
         DiscordApi api = new DiscordApiBuilder()
                 .setAllNonPrivilegedIntents()
@@ -45,12 +41,10 @@ public class MainBot {
                 .login()
                 .join();
 
-        api.addMessageCreateListener(dotaTest);
-        api.addMessageCreateListener(voiceConnect);
         api.addMessageCreateListener(changeIdListener);
-
-        api.addMessageCreateListener(mainController);
-        api.addMessageComponentCreateListener(mainControllerListener);
+        api.addMessageCreateListener(checkSteamId);
+        api.addMessageCreateListener(randomCharacter);
+        api.addMessageCreateListener(help);
 
         return api;
     }

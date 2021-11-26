@@ -1,5 +1,6 @@
 package com.example.discordbotv4.repositories;
 
+import com.example.discordbotv4.exceptions.NotFoundException;
 import com.example.discordbotv4.models.DotaCharacter;
 import com.example.discordbotv4.models.DotaPlayerHeroes;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,20 +39,24 @@ public class DotaRepository {
     }
 
     @Cacheable("playerHeroes")
-    public List<DotaPlayerHeroes> loadPlayerHeroes(String id) {
+    public List<DotaPlayerHeroes> loadPlayerHeroes(String id) throws NotFoundException{
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth("0467e1af-b9b0-4fde-8c43-8672ebb603e6");
         headers.add("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36");
 
         HttpEntity<String> request = new HttpEntity<String>(headers);
-        ResponseEntity<DotaPlayerHeroes[]> result = restTemplate.exchange(dotaPlayerHeroesUrl + id + "/heroes", HttpMethod.GET,
-                request, DotaPlayerHeroes[].class);
-
-        if (result.getBody() != null) {
-            return Arrays.asList(result.getBody());
-        } else {
-            return Collections.emptyList();
+        try {
+            ResponseEntity<DotaPlayerHeroes[]> result = restTemplate.exchange(dotaPlayerHeroesUrl + id + "/heroes", HttpMethod.GET,
+                    request, DotaPlayerHeroes[].class);
+            if (result.getBody() != null) {
+                return Arrays.asList(result.getBody());
+            } else {
+                return Collections.emptyList();
+            }
+        } catch (Exception e) {
+            throw new NotFoundException("dota Id = " + id + " Not Found", e);
         }
+
     }
 
 }

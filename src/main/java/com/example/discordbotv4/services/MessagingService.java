@@ -6,6 +6,7 @@ import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.MessageAuthor;
 import org.javacord.api.entity.message.MessageBuilder;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
+import org.javacord.api.event.message.MessageCreateEvent;
 
 import java.awt.*;
 import java.util.Map;
@@ -57,11 +58,22 @@ public class MessagingService {
         return embedBuilder;
     }
 
-    private Color getRandomColor(){
+    public static Color getRandomColor(){
         int red = (int) Math.floor(Math.random() * 255);
         int green = (int) Math.floor(Math.random() * 255);
         int blue = (int) Math.floor(Math.random() * 255);
 
         return new Color(red, green, blue);
+    }
+
+    public static CompletableFuture<Message> sendBasicErrorMessage(MessageCreateEvent event){
+        EmbedBuilder embedBuilder = new EmbedBuilder()
+                .setAuthor(event.getMessageAuthor())
+                .setTitle("Произошла ошибка")
+                .setDescription("Что-то пошло не так, обратитесь к создателю бота (NULL#3391)")
+                .setTimestampToNow()
+                .setColor(new Color(255, 0, 0));
+
+        return new MessageBuilder().setEmbed(embedBuilder).send(event.getChannel());
     }
 }
