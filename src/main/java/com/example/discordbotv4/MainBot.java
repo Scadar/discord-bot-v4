@@ -1,9 +1,6 @@
 package com.example.discordbotv4;
 
-import com.example.discordbotv4.listeners.ChangeSteamId;
-import com.example.discordbotv4.listeners.CheckSteamId;
-import com.example.discordbotv4.listeners.Help;
-import com.example.discordbotv4.listeners.RandomCharacter;
+import com.example.discordbotv4.listeners.*;
 import org.javacord.api.DiscordApi;
 import org.javacord.api.DiscordApiBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,16 +16,18 @@ public class MainBot {
     private final CheckSteamId checkSteamId;
     private final RandomCharacter randomCharacter;
     private final Help help;
+    private final Statistic statistic;
 
     @Value("${discord.token}")
     private String token;
 
     @Autowired
-    public MainBot(ChangeSteamId changeIdListener, CheckSteamId checkSteamId, RandomCharacter randomCharacter, Help help) {
+    public MainBot(ChangeSteamId changeIdListener, CheckSteamId checkSteamId, RandomCharacter randomCharacter, Help help, Statistic statistic) {
         this.randomCharacter = randomCharacter;
         this.changeIdListener = changeIdListener;
         this.checkSteamId = checkSteamId;
         this.help = help;
+        this.statistic = statistic;
     }
 
     @Bean
@@ -44,6 +43,7 @@ public class MainBot {
         api.addMessageCreateListener(changeIdListener);
         api.addMessageCreateListener(checkSteamId);
         api.addMessageCreateListener(randomCharacter);
+        api.addMessageCreateListener(statistic);
         api.addMessageCreateListener(help);
 
         return api;

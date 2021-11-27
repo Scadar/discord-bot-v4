@@ -1,30 +1,57 @@
 package com.example.discordbotv4.listeners;
 
-import com.example.discordbotv4.services.MessagingService;
-import org.javacord.api.entity.message.MessageBuilder;
+import com.example.discordbotv4.cmd.CmdEnum;
+import com.example.discordbotv4.cmd.CommandsUtil;
+import com.example.discordbotv4.utils.MessageUtil;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.event.message.MessageCreateEvent;
 import org.javacord.api.listener.message.MessageCreateListener;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class Help implements MessageCreateListener {
 
-    private final String description =
-        "Пример использования команды с параметром: ***!setDotaId 1234567***\n\n" +
-        "**!help**              Команда для получения всех команд бота\n\n" +
-        "**!setDotaId {id}**    Команда для записи вашего Dota ID в бота\n\n" +
-        "**!checkId**           Команда для проверки вашего Dota ID\n\n" +
-        "**!random**            Команда для получения случайного героя из Dota 2. P.S. Если вы добавили в бота свой Dota ID, то будет больше информации";
+    private final CommandsUtil commandsUtil;
+
+    @Autowired
+    public Help(CommandsUtil commandsUtil) {
+        this.commandsUtil = commandsUtil;
+    }
 
     @Override
     public void onMessageCreate(MessageCreateEvent event) {
-        if (event.getMessageContent().startsWith("!help")) {
+        if (commandsUtil.startWith(event, CmdEnum.HELP_CMD)) {
 
-            new MessageBuilder()
-                    .addEmbed(new EmbedBuilder().setDescription(description).setColor(MessagingService.getRandomColor()))
-                    .send(event.getChannel());
+            StringBuilder stringBuilder = new StringBuilder();
+            stringBuilder.append("Пример использования команды с параметром: **!set_dota_id 1234567**\n\n");
 
+            commandsUtil.getCommands().forEach(cmd -> {
+                stringBuilder
+                        .append("**")
+                        .append(cmd.getCmd());
+
+                cmd.getParameters().forEach(param -> {
+                    stringBuilder
+                            .append(" ")
+                            .append("{")
+                            .append(param)
+                            .append("}");
+                });
+
+                stringBuilder
+                        .append("**")
+                        .append(" \t\t ")
+                        .append(cmd.getDescription())
+                        .append("\n\n");
+            });
+
+            MessageUtil.sendMessage(
+                    event,
+                    new EmbedBuilder()
+                            .setTitle("Команды бота Dimochka")
+                            .setDescription(stringBuilder.toString())
+            );
         }
     }
 }

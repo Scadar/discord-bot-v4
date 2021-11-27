@@ -1,12 +1,14 @@
 package com.example.discordbotv4.listeners;
 
+import com.example.discordbotv4.cmd.CmdEnum;
+import com.example.discordbotv4.cmd.CommandsUtil;
 import com.example.discordbotv4.exceptions.NotFoundException;
-import com.example.discordbotv4.models.DotaCharacter;
-import com.example.discordbotv4.models.DotaPlayerHeroes;
-import com.example.discordbotv4.repositories.DotaRepository;
-import com.example.discordbotv4.services.MessagingService;
+import com.example.discordbotv4.dota.models.DotaCharacter;
+import com.example.discordbotv4.dota.models.DotaPlayerHeroes;
+import com.example.discordbotv4.dota.DotaRepository;
 import com.example.discordbotv4.userSteamId.UserSteamId;
 import com.example.discordbotv4.userSteamId.UserSteamIdService;
+import com.example.discordbotv4.utils.MessageUtil;
 import org.javacord.api.entity.message.MessageBuilder;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.event.message.MessageCreateEvent;
@@ -24,16 +26,18 @@ public class RandomCharacter implements MessageCreateListener {
 
     private final UserSteamIdService userSteamIdService;
     private final DotaRepository dotaRepository;
+    private final CommandsUtil commandsUtil;
 
     @Autowired
-    public RandomCharacter(UserSteamIdService userSteamIdService, DotaRepository dotaRepository) {
+    public RandomCharacter(UserSteamIdService userSteamIdService, DotaRepository dotaRepository, CommandsUtil commandsUtil) {
         this.userSteamIdService = userSteamIdService;
         this.dotaRepository = dotaRepository;
+        this.commandsUtil = commandsUtil;
     }
 
     @Override
     public void onMessageCreate(MessageCreateEvent event) {
-        if (event.getMessageContent().startsWith("!random")) {
+        if (commandsUtil.startWith(event, CmdEnum.RANDOM_DOTA_CHARACTER_CMD)) {
             try {
                 String userId = event.getMessageAuthor().getIdAsString();
                 Optional<UserSteamId> userSteamId = userSteamIdService.findByUserId(userId);
@@ -68,22 +72,14 @@ public class RandomCharacter implements MessageCreateListener {
                     Double winAgainst = round((double) playerHero.getAgainst_win() / playerHero.getAgainst_games() * 100);
                     playerHeroesFields.put("Процент побед против", winAgainst + "%");
 
-                    playerHeroesEmbedBuilder = MessagingService.builder()
-                            .author(event.getMessageAuthor())
-                            .title("Твоя статистика на этом персе")
-                            .channel(event.getChannel())
-                            .fields(playerHeroesFields)
-                            .build()
-                            .getEmbedBuilder();
+                    playerHeroesEmbedBuilder = MessageUtil.getEmbedBuilder(event).setTitle("Твоя статистика на этом персе");
+                    MessageUtil.addFields(playerHeroesFields, playerHeroesEmbedBuilder);
+
                 } else {
-                    playerHeroesEmbedBuilder = MessagingService.builder()
-                            .author(event.getMessageAuthor())
-                            .title("Статистики нема")
-                            .description("Добавьте id для подробной статистики")
-                            .description("Для добавления/замены вашего id введите команду \"!setDotaId {id}\"")
-                            .channel(event.getChannel())
-                            .build()
-                            .getEmbedBuilder();
+                    playerHeroesEmbedBuilder = MessageUtil
+                            .getEmbedBuilder(event)
+                            .setDescription("Добавьте id для подробной статистики. Для добавления/замены вашего id введите команду !setDotaId {id}")
+                            .setTitle("Статистики нема");
                 }
 
                 Map<String, String> fields = new LinkedHashMap<>();
@@ -94,33 +90,25 @@ public class RandomCharacter implements MessageCreateListener {
                 fields.put("Брони", dotaCharacter.getBase_armor().toString());
                 fields.put("Скорость", dotaCharacter.getMove_speed().toString());
 
-                new MessageBuilder()
-                        .addEmbed(
-                                MessagingService.builder()
-                                        .author(event.getMessageAuthor())
-                                        .title("Твой персонаж")
-                                        .description(dotaCharacter.getLocalized_name())
-                                        .image("https://api.opendota.com" + dotaCharacter.getImg())
-                                        .thumbnail("https://api.opendota.com" + dotaCharacter.getIcon())
-                                        .channel(event.getChannel())
-                                        .fields(fields)
-                                        .build()
-                                        .getEmbedBuilder()
-                        )
-                        .addEmbed(playerHeroesEmbedBuilder)
-                        .send(event.getChannel());
+                EmbedBuilder characterMessage = MessageUtil
+                        .getEmbedBuilder(event)
+                        .setTitle("Твой персонаж")
+                        .setDescription(dotaCharacter.getLocalized_name())
+                        .setImage("https://api.opendota.com" + dotaCharacter.getImg())
+                        .setThumbnail("https://api.opendota.com" + dotaCharacter.getIcon());
+                MessageUtil.addFields(fields, characterMessage);
 
-            } catch (NotFoundException error){
-                MessagingService.builder()
-                        .author(event.getMessageAuthor())
-                        .title("Ошибка")
-                        .description("Указан неверный Dota ID")
-                        .channel(event.getChannel())
-                        .build()
-                        .sendMessage();
-            }
-            catch (Exception error) {
-                MessagingService.sendBasicErrorMessage(event);
+                new MessageBuilder().addEmbed(characterMessage).addEmbed(playerHeroesEmbedBuilder).send(event.getChannel());
+
+            } catch (NotFoundException error) {
+                MessageUtil.sendMessage(
+                        event,
+                        new EmbedBuilder()
+                                .setTitle("Ошибка")
+                                .setDescription("Указан неверный Dota ID")
+                );
+            } catch (Exception error) {
+                MessageUtil.sendBasicErrorMessage(event);
             }
         }
     }

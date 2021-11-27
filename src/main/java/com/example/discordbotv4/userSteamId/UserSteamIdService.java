@@ -1,5 +1,7 @@
 package com.example.discordbotv4.userSteamId;
 
+import com.example.discordbotv4.utils.MessageUtil;
+import org.javacord.api.event.message.MessageCreateEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +19,15 @@ public class UserSteamIdService {
 
     public Optional<UserSteamId> findByUserId(String userId) {
         return userSteamIdRepository.findByUserId(userId);
+    }
+
+    public UserSteamId findByUserIdOrSendErrorMessage(String userId, MessageCreateEvent event) {
+        try {
+            return userSteamIdRepository.findByUserId(userId).orElseThrow(() -> new RuntimeException(""));
+        } catch (Exception e) {
+            MessageUtil.sendErrorNotFoundId(event);
+            throw new RuntimeException(e);
+        }
     }
 
     public UserSteamId addOrReplaceUserSteamId(String userId, String dotaId) {

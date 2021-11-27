@@ -1,4 +1,4 @@
-package com.example.discordbotv4.models;
+package com.example.discordbotv4.dota.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
