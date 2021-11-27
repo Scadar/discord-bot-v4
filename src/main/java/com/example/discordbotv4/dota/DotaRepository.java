@@ -3,6 +3,7 @@ package com.example.discordbotv4.dota;
 import com.example.discordbotv4.dota.models.DotaCharacter;
 import com.example.discordbotv4.dota.models.DotaPlayerHeroes;
 import com.example.discordbotv4.dota.models.DotaPlayerInfo;
+import com.example.discordbotv4.dota.models.TotalStat;
 import com.example.discordbotv4.exceptions.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -56,6 +57,10 @@ public class DotaRepository {
 
     public List<RecentMatch> loadRecentMatch(String id) throws NotFoundException {
         return loadListData(dotaPlayerUrl + id + "/recentMatches", ParameterizedTypeReference.forType(RecentMatch[].class));
+    }
+
+    public List<TotalStat> loadTotalStats(String id) throws NotFoundException {
+        return loadListData(dotaPlayerUrl + id + "/totals", ParameterizedTypeReference.forType(TotalStat[].class));
     }
 
     private <T> List<T> loadListData(String url, ParameterizedTypeReference<T[]> responseType) throws NotFoundException {

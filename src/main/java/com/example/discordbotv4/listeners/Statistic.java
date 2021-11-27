@@ -5,9 +5,11 @@ import com.example.discordbotv4.cmd.CommandsUtil;
 import com.example.discordbotv4.dota.DotaService;
 import com.example.discordbotv4.dota.RecentMatch;
 import com.example.discordbotv4.dota.models.DotaPlayerInfo;
+import com.example.discordbotv4.dota.models.TotalStat;
 import com.example.discordbotv4.userSteamId.UserSteamId;
 import com.example.discordbotv4.userSteamId.UserSteamIdService;
 import com.example.discordbotv4.utils.MessageUtil;
+import org.javacord.api.entity.message.Message;
 import org.javacord.api.entity.message.MessageBuilder;
 import org.javacord.api.entity.message.embed.EmbedBuilder;
 import org.javacord.api.event.message.MessageCreateEvent;
@@ -17,6 +19,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
@@ -36,22 +39,53 @@ public class Statistic implements MessageCreateListener {
     @Override
     public void onMessageCreate(MessageCreateEvent event) {
         if (commandsUtil.startWith(event, CmdEnum.MY_STATISTIC_CMD)) {
+
+            CompletableFuture<Message> loadMessage = new MessageBuilder()
+                    .append("Идет загрузка...")
+                    .send(event.getChannel());
+
             UserSteamId userFromDb = userSteamIdService.findByUserIdOrSendErrorMessage(event.getMessageAuthor().getIdAsString(), event);
             List<RecentMatch> recentMatches = dotaService.loadRecentMatchesOrSendErrorMessage(userFromDb.getDotaId(), event);
             DotaPlayerInfo dotaPlayerInfo = dotaService.loadDotaPlayerInfoOrSendErrorMessage(userFromDb.getDotaId(), event);
-            EmbedBuilder accountEmbed = MessageUtil.getEmbedBuilder(event)
-                    .setTitle("Аккаунт")
-                    .setImage(dotaPlayerInfo.getProfile().getAvatarfull())
-                    .setUrl(dotaPlayerInfo.getProfile().getProfileurl())
-                    .setDescription("Ник: **" + dotaPlayerInfo.getProfile().getPersonaname() + "**")
-                    .addInlineField("Есть плюс?", dotaPlayerInfo.getProfile().getPlus().toString())
-                    .addInlineField("Последний вход", dotaPlayerInfo.getProfile().getLast_login().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
-                    .addInlineField("Steam ID", dotaPlayerInfo.getProfile().getSteamid())
-                    .addInlineField("Dota ID", dotaPlayerInfo.getProfile().getAccount_id().toString());
+            List<TotalStat> totalStats = dotaService.loadTotalStatsOrSendErrorMessage(userFromDb.getDotaId(), event);
 
-            new MessageBuilder().addEmbed(accountEmbed).addEmbed(getAccountEmbed(event, recentMatches)).send(event.getChannel());
+
+            loadMessage
+                    .thenAccept(message -> {
+                        message.edit(
+                                new MessageBuilder()
+                                        .addEmbed(getSteamEmbed(event, dotaPlayerInfo))
+                                        .addEmbed(getAccountEmbed(event, recentMatches))
+                                        .addEmbed(getTotalStatEmbed(event, totalStats))
+                                        .send(event.getChannel()).toString()
+                        );
+                    });
+
+
         }
     }
+
+    private EmbedBuilder getSteamEmbed(MessageCreateEvent event, DotaPlayerInfo dotaPlayerInfo) {
+        return MessageUtil.getEmbedBuilder(event)
+                .setTitle("Аккаунт")
+                .setImage(dotaPlayerInfo.getProfile().getAvatarfull())
+                .setUrl(dotaPlayerInfo.getProfile().getProfileurl())
+                .setDescription("Ник: **" + dotaPlayerInfo.getProfile().getPersonaname() + "**")
+                .addInlineField("Есть плюс?", dotaPlayerInfo.getProfile().getPlus().toString())
+                .addInlineField("Последний вход", dotaPlayerInfo.getProfile().getLast_login().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                .addInlineField("Steam ID", dotaPlayerInfo.getProfile().getSteamid())
+                .addInlineField("Dota ID", dotaPlayerInfo.getProfile().getAccount_id().toString());
+    }
+
+    private EmbedBuilder getTotalStatEmbed(MessageCreateEvent event, List<TotalStat> totalStats) {
+        EmbedBuilder statEmbed = MessageUtil.getEmbedBuilder(event)
+                .setTitle("Общая статистика");
+        totalStats.forEach(stat -> {
+            statEmbed.addInlineField(stat.getField(), stat.getSum().toString());
+        });
+        return statEmbed;
+    }
+
 
     private EmbedBuilder getAccountEmbed(MessageCreateEvent event, List<RecentMatch> recentMatches) {
         int size = recentMatches.size();
